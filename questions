@@ -1,0 +1,140 @@
+设计lazyarray
+设计MockHashMap
+
+
+1. web crawler 问的比较细，各种disk io，network io优化
+2. 设计lazyarray 之前面经里有
+3. 设计MockHashMap, 面经题，也是问的很细，很多followup
+4. hm
+5. visa payment network
+KV Store
+llvm
+
+Kv store with data persistent functionlaity。两个方法- WALs and snapshot
+原题是给一个string 要求实现高效的三种操作：get(int key), insert(char c, int key), delete(char c, int key)
+
+刷题网 317 Shortest Distance from All Buildings
+RandomHashMap
+SQLCommentRemove
+
+IpCIDRMask
+
+implementing a simple division algorithm in LLVM
+
+没在面经里见过，也可能是我没看到，
+给一个2d array里面有不同的char，x代表block，1，2。。之类的数字代表不同的通勤方式，每种会需要不同的时间和开销，问从起点到终点的最快的通勤方式是什么，如果有相同的返回开销最少的。下面是个栗子。
+输入：
+2D Grid:      
+|3|3|S|2|X|X|  
+|3|1|1|2|X|2|
+|3|1|1|2|2|2|
+|3|1|1|1|D|3|         
+|3|3|3|3|3|4|
+|4|4|4|4|4|4|
+时间array: [3, 2, 1, 1 ] 表示 (通勤方式) 1, 2, 3, 4 -> （时间）3, 2, 1, 1
+开销array: [0, 1, 3, 2] 表示 (通勤方式)1, 2, 3, 4 -> （开销）0, 1, 3, 2
+输出：‍‍‍‍‌‌‌‍‌‍‍‍‌‍‌‍‍‌‌‍2 （用2可以最快的从S到D）
+我用BFS写的，但有个测试没过，没调出来问题在哪，希望能帮助到大家。
+同时求大米～
+
+https://leetcode.com/playground/7CSVv7ZX
+
+https://le.qun.ch/en/blog/sharding/
+
+https://blog.unibulmerchantservices.com/how-visas-payment-system-works/
+
+
+// 第一轮，architecture，设计visa payment system。注意handle double payment和保存payment状态，参考stripe的idempotent api设计。
+
+An idempotent operation is when a request can be retried with no additional side effects
+
+https://www.youtube.com/watch?v=I08syTslan8
+
+idempotence keys
+
+idempotence-key header for stripe
+
+https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
+
+
+https://www.1point3acres.com/bbs/thread-646821-1-1.html
+
+这篇文章也许可以有帮助。 https://redis.io/topics/persistence
+RDB类似Snapshot.  AOF 类似wals
+
+
+ https://medium.com/airbnb-engineering/avoiding-double-payments-in-a-distributed-payments-system-2981f6b070bb
+
+：https://www.1point3acres.com/bbs/thread-803679-1-1.html。设计 key value s‍‍‌‍‌‍‌‌‌‌‌‌‌‍‍‌‌tore 能统计 QPS
+
+
+"""
+* Writes the given key/value pair into the store.  If `key` is already present replace the
+* current `value` with one given.  After this function returns, the value must be *durable*
+* meaning that even in the presense of failures (program crashing or power going out), subsequent
+* `get()` calls for this key must continue to return the result of the most recent put.
+"""
+def put(key, value)
+"""
+* Returns the most recently `put` value for the given `key`.  
+* Returns null, if no value has been `put` for this key.
+"""
+def get(key) => value
+"""
+* Called when the system first comes up. You can assume that no `get()` or `put()` calls will be made
+* before this function has completed. For candidates with an OO background, you can think of this
+* as the constructor for your key-value store.
+"""
+def init()
+
+
+
+
+
+// 1. system & design，还是web crawler那个题，先写个单线程的限制最大depth的BFS的crawler，很快写完，然后开始讨论performance瓶颈。
+// 一开始提供了三个utility function：
+// (1）fetch(URL: url) -> HTML: content;
+// （2）parse(HTML: content) -> List<URL>;
+// (3) save(URL: url, HTML: content)。
+// `save`是把数据存在disk上，`fetch`是发个network request，
+// `parse`是in-memory解析html page，
+// 有一个要求就是每一次crawl的URL都要调用save存在local disk上面。
+// performance瓶颈的讨论就集中在这3个函数上，问到了每个函数的大致的latency的范围，这个代码的CPU利用率会不会高，
+// 如果有bottleneck大概率在那儿（应该是在network上），问完了就到followup了，怎么提高速度，那就多线程操练起来吧。
+// 楼主因为Java用得多，就拿ForkJoinPool写了一个solution，面试官好像不怎么了解Java的ForkJoin framework，所以问了很多关于这个framework怎么做scheduling的，有没有blocking wait之类的问题，
+// 花了十几分钟讲ForkJoinPool的cooperative scheduling的原理，幸好之前看了不少文章。问到最后感觉面试官并不怎么满意，大概率这轮挂了。
+
+
+
+
+
+// 上来先解释map-reduce是什么，通过最简单的例子来说明。
+// 正式开始，给了一道map reduce相关的题目：
+// # Given a large number of key-value pairs and a small number k (< 1,000,000),
+// implement a MapReduce algorithm to find the k largest values associated with each key.
+
+// # For example, with k = 2 and the following input key-value pairs
+// # ("a", 2L)
+// # ("b", 3L)
+// # ("c", 1L)
+// # ("a", 1L)
+// # ("b", 2L)
+// # ("a", 3L)
+// # the expected output is
+// # ("a", 2L)
+// # ("a", 3L)
+// # ("b", 3L)
+// # ("b", 2L)
+// # ("c", 1L)
+// 解释map跟reduce分别要做什么？
+// 多少个mapper最优？
+// 我的回答： map function里面用hashmap存key -> list of values in descending order (at most k value)，然后在reduce function里面对所有同一个key的value lists，类似merge order list的方式取出前k个。
+// 实现 reduce function 里面 top_k() 的部分。讨论时间空间复杂度
+
+// Followup 部分: if k is very large, basically you can't store all K values in memory, what do you do?'
+// 这部分根据提示，思路大概是这样：
+// 如果你知道the ‍‍‌‍‌‍‌‌‌‌‌‌‌‍‍‌‌k-th largest number的值，你就可以直接输出大于等于他的value。所以问题第一步，是怎样找到 k-th largest number。
+// 而想要找到k-th largest number，提示是：能不能想办法推断k-th largest number 是正数还是负数。其实是可以的，只需要统计正数的个数。如果正数的个数大于k，那么k-th largest number 必然是正数。所以按照这个思路其实就类似于二分查找，
+// 第一轮先找到max value 和min value, 第二轮如果大于mid value的count > k，那么k-th largest必然大于mid，所以下次二分查找就在mid ～ max的范围里面找。
+
+# https://www.1point3acres.com/bbs/thread-752811-1-1.html
